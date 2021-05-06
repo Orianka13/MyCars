@@ -11,6 +11,13 @@ import CoreData
 
 class ViewController: UIViewController {
     
+    lazy var dateFormatter: DateFormatter = {
+        let df = DateFormatter()
+        df.dateStyle = .short
+        df.timeStyle = .none
+        return df
+    }()
+    
     var context: NSManagedObjectContext!
     
     @IBOutlet weak var segmentedControl: UISegmentedControl!
@@ -34,6 +41,17 @@ class ViewController: UIViewController {
         
     }
     
+    private func insertDataFrom(selectedCar car: Car){
+        carImageView.image = UIImage(data: car.imageData!)
+        markLabel.text = car.mark
+        modelLabel.text = car.model
+        myChoiceImageView.isHidden = !(car.myChoice)
+        ratingLabel.text = "Rating: \(car.rating) / 10"
+        numberOfTripsLabel.text = "Number of trips: \(car.timesDriven)"
+        lastTimeStartedLabel.text = "Last time started: \(dateFormatter.string(from: car.lastStarted!))"
+        segmentedControl.backgroundColor = car.titntColor as? UIColor
+    }
+    
     private func getDataFromFile() {
         //остановим выполенение метода если в БД уже созданы объекты типа Car
         let fetchRequest: NSFetchRequest<Car> = Car.fetchRequest()
@@ -46,8 +64,6 @@ class ViewController: UIViewController {
             print(error.localizedDescription)
         }
         guard records == 0 else { return }
-        
-        
         
         //получим путь до нашего файла
         guard let pathToFile = Bundle.main.path(forResource: "data", ofType: "plist"),
@@ -93,8 +109,19 @@ class ViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
        
+        getDataFromFile()
         
+        let fetchRequest: NSFetchRequest<Car> = Car.fetchRequest()
+        let mark = segmentedControl.titleForSegment(at: 0)
+        fetchRequest.predicate = NSPredicate(format: "mark == %@", mark!)
+        
+        do{
+            let results = try context.fetch(fetchRequest)
+            let car = results.first
+            insertDataFrom(selectedCar: car!)
+        } catch let error as NSError {
+            print(error.localizedDescription)
+        }
     }
-    
 }
 
